@@ -4,7 +4,7 @@ A real-time meeting copilot that transcribes your mic, surfaces 3 contextual sug
 
 ## Live Demo
 
-[Deployed URL here]
+https://twinmind-peach.vercel.app
 
 ## Setup
 
