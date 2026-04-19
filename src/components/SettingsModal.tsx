@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import type { Settings } from '../types'
 import { DEFAULT_SETTINGS } from '../lib/storage'
 
+const SETTINGS_PIN = '1234'
+
 interface Props {
   settings: Settings
   onSave: (s: Settings) => void
@@ -10,7 +12,53 @@ interface Props {
 }
 
 export function SettingsModal({ settings, onSave, onClose }: Props) {
+  const [unlocked, setUnlocked] = useState(false)
+  const [pin, setPin] = useState('')
+  const [pinError, setPinError] = useState(false)
   const [draft, setDraft] = useState<Settings>({ ...settings })
+
+  if (!unlocked) {
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-8 flex flex-col items-center gap-5">
+          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div className="text-center">
+            <h2 className="text-base font-semibold text-gray-900">Settings locked</h2>
+            <p className="text-xs text-gray-400 mt-1">Enter PIN to continue</p>
+          </div>
+          <input
+            type="password"
+            inputMode="numeric"
+            maxLength={8}
+            autoFocus
+            value={pin}
+            onChange={e => { setPin(e.target.value); setPinError(false) }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                if (pin === SETTINGS_PIN) setUnlocked(true)
+                else setPinError(true)
+              }
+            }}
+            placeholder="••••"
+            className={`w-full text-center text-lg tracking-widest border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${pinError ? 'border-red-400 focus:ring-red-200' : 'border-gray-200 focus:ring-gray-200'}`}
+          />
+          {pinError && <p className="text-xs text-red-500 -mt-2">Incorrect PIN</p>}
+          <div className="flex gap-3 w-full">
+            <button onClick={onClose} className="flex-1 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg">Cancel</button>
+            <button
+              onClick={() => { if (pin === SETTINGS_PIN) setUnlocked(true); else setPinError(true) }}
+              className="flex-1 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700"
+            >Unlock</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     setDraft((prev) => ({ ...prev, [key]: value }))
