@@ -9,10 +9,11 @@ interface Props {
   settings: Settings
   onSave: (s: Settings) => void
   onClose: () => void
+  requirePin?: boolean
 }
 
-export function SettingsModal({ settings, onSave, onClose }: Props) {
-  const [unlocked, setUnlocked] = useState(false)
+export function SettingsModal({ settings, onSave, onClose, requirePin = true }: Props) {
+  const [unlocked, setUnlocked] = useState(!requirePin)
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState(false)
   const [draft, setDraft] = useState<Settings>({ ...settings })

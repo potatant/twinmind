@@ -89,6 +89,7 @@ export default function App() {
       {showSettings && (
         <SettingsModal
           settings={settings}
+          requirePin={!!settings.groqApiKey}
           onSave={handleSaveSettings}
           onClose={() => {
             if (!settings.groqApiKey) return // force them to set a key first
