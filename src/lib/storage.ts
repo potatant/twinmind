@@ -32,7 +32,7 @@ export const DEFAULT_CHAT_PROMPT = `You are a live meeting copilot assistant wit
 Be concise but thorough. Reference specific things from the transcript when relevant. Use markdown formatting (bullet points, bold, headers) where it aids clarity.`
 
 export const DEFAULT_SETTINGS: Settings = {
-  groqApiKey: '',
+  groqApiKey: import.meta.env.VITE_GROQ_API_KEY ?? '',
   model: 'openai/gpt-oss-120b',
   whisperModel: 'whisper-large-v3',
   suggestionPrompt: DEFAULT_SUGGESTION_PROMPT,

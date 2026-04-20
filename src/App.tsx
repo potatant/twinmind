@@ -10,7 +10,7 @@ import { SettingsModal } from './components/SettingsModal'
 
 export default function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings)
-  const [showSettings, setShowSettings] = useState(() => !loadSettings().groqApiKey)
+  const [showSettings, setShowSettings] = useState(() => !loadSettings().groqApiKey && !import.meta.env.VITE_GROQ_API_KEY)
 
   const session = useSession(settings)
 
