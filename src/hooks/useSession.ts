@@ -16,23 +16,29 @@ export function useSession(settings: Settings) {
 
   const recorder = useAudioRecorder()
 
-  // Refs for stable access inside async callbacks and intervals
+  // All refs — so async callbacks and timers never have stale closures
   const transcriptRef = useRef<TranscriptChunk[]>([])
   const settingsRef = useRef<Settings>(settings)
   const chatRef = useRef<ChatMessage[]>([])
   const isRefreshingRef = useRef(false)
+  const isRecordingRef = useRef(false)
+  const captureChunkRef = useRef(recorder.captureChunk)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const firstTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Keep all refs current every render
   transcriptRef.current = transcript
   settingsRef.current = settings
   chatRef.current = chat
+  captureChunkRef.current = recorder.captureChunk
+  isRecordingRef.current = recorder.isRecording
 
   const getFullTranscript = useCallback(
     () => transcriptRef.current.map((c) => c.text).join(' '),
     []
   )
 
+  // doRefresh has NO dependencies — it reads everything through refs
   const doRefresh = useCallback(async () => {
     if (isRefreshingRef.current) return
     const s = settingsRef.current
@@ -44,9 +50,9 @@ export function useSession(settings: Settings) {
 
     isRefreshingRef.current = true
 
-    // 1. Capture and transcribe the latest audio chunk
-    if (recorder.isRecording) {
-      const chunk = recorder.captureChunk()
+    // 1. Transcribe latest audio chunk if recording
+    if (isRecordingRef.current) {
+      const chunk = captureChunkRef.current()
       if (chunk && chunk.size > 0) {
         setIsTranscribing(true)
         try {
@@ -66,7 +72,7 @@ export function useSession(settings: Settings) {
       }
     }
 
-    // 2. Generate suggestions from the latest transcript
+    // 2. Generate suggestions (only if there's transcript)
     const fullText = transcriptRef.current.map((c) => c.text).join(' ')
     if (!fullText.trim()) {
       isRefreshingRef.current = false
@@ -90,9 +96,8 @@ export function useSession(settings: Settings) {
       setIsSuggesting(false)
       isRefreshingRef.current = false
     }
-  }, [recorder])
+  }, []) // no deps — all state accessed via refs
 
-  // Keep a stable ref so timers always call the latest version of doRefresh
   const doRefreshRef = useRef(doRefresh)
   doRefreshRef.current = doRefresh
 
@@ -105,8 +110,9 @@ export function useSession(settings: Settings) {
     try {
       await recorder.start()
       setError(null)
-      // Fire first refresh after 15s (enough audio to transcribe), then every interval
+
       const ms = settingsRef.current.refreshIntervalSeconds * 1000
+      // First refresh after 15s (enough audio to transcribe), then every interval
       firstTimeoutRef.current = setTimeout(() => doRefreshRef.current(), 15_000)
       intervalRef.current = setInterval(() => doRefreshRef.current(), ms)
     } catch {
@@ -116,9 +122,8 @@ export function useSession(settings: Settings) {
 
   const stopRecording = useCallback(async () => {
     clearTimers()
-    // Capture and transcribe any remaining audio before stopping
-    if (recorder.isRecording && settingsRef.current.groqApiKey) {
-      const chunk = recorder.captureChunk()
+    if (isRecordingRef.current && settingsRef.current.groqApiKey) {
+      const chunk = captureChunkRef.current()
       if (chunk && chunk.size > 0) {
         try {
           const text = await transcribeAudio(chunk, settingsRef.current)
